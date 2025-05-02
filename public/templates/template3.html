@@ -1,0 +1,40 @@
+<!-- Template 3: Modern Minimalist - Clean design with monospace font and dashed border -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wedding Invitation - Modern Minimalist</title>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+  <div class="max-w-2xl w-full bg-white border-2 border-dashed border-gray-300 p-2">
+    <!-- Main invitation content -->
+    <div class="p-8 md:p-12 border border-gray-800 flex flex-col items-center text-center">
+      <h4 class="text-gray-500 uppercase tracking-widest text-xs mb-8 font-mono">WEDDING INVITATION</h4>
+      
+      <h1 class="text-3xl md:text-4xl font-mono text-gray-900 mb-8 uppercase tracking-wide">
+        <span>{{brideName}}</span>
+        <span class="mx-3 text-gray-400">+</span>
+        <span>{{groomName}}</span>
+      </h1>
+      
+      <div class="w-full h-px bg-gray-300 my-8"></div>
+      
+      <div class="font-mono text-lg md:text-xl text-gray-700 mb-2 uppercase tracking-wide">WHEN</div>
+      <div class="font-mono text-md text-gray-600 mb-8">{{dateTime}}</div>
+      
+      <div class="font-mono text-lg md:text-xl text-gray-700 mb-2 uppercase tracking-wide">WHERE</div>
+      <div class="font-mono text-md text-gray-600 mb-8">{{venueName}}</div>
+      
+      
+      <!-- QR code placeholder with grid design -->
+      <div class="mb-8 relative">
+        <div class="absolute inset-0 border-2 border-dashed border-gray-300 -m-2"></div>
+        <div id="qrcode" class="p-4 inline-block bg-white"></div>
+      </div>
+      
+      <p class="text-gray-500 font-mono text-xs uppercase tracking-widest">Please RSVP by scanning the QR code</p>
+    </div>
+  </div>
+</body>
+</html> 

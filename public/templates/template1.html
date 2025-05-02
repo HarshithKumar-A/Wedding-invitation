@@ -1,0 +1,46 @@
+<!-- Template 1: Classic White - Elegant serif on white background with border and shadow -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wedding Invitation - Classic Elegance</title>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+  <div class="max-w-2xl w-full bg-white rounded-lg shadow-lg overflow-hidden">
+    <!-- Decorative header -->
+    <div class="h-8 bg-gray-800"></div>
+    
+    <!-- Main invitation content -->
+    <div class="p-8 md:p-12 border border-gray-200 m-6 flex flex-col items-center text-center">
+      <h4 class="text-gray-500 uppercase tracking-widest text-xs mb-6 font-serif">The Honor of Your Presence is Requested</h4>
+      
+      <h1 class="text-4xl md:text-5xl font-serif text-gray-800 mb-6">
+        <span>{{brideName}}</span>
+        <span class="mx-2 text-gray-400">&</span>
+        <span>{{groomName}}</span>
+      </h1>
+      
+      <p class="text-gray-600 mb-6 font-serif">request the pleasure of your company at their wedding celebration</p>
+      
+      <div class="w-24 h-0.5 bg-gray-300 my-6"></div>
+      
+      <div class="font-serif text-xl text-gray-700 mb-6">{{dateTime}}</div>
+      
+      <div class="font-serif text-xl text-gray-700 mb-10">{{venueName}}</div>
+      
+      <!-- <a href="{{venueUrl}}" class="mb-8 inline-block border border-gray-800 text-gray-800 font-serif py-2 px-6 hover:bg-gray-800 hover:text-white transition-colors duration-200 rounded">
+        View on Map
+      </a> -->
+      
+      <!-- QR code placeholder -->
+      <div id="qrcode" class="border border-gray-200 p-4 inline-block mb-6"></div>
+      
+      <p class="text-gray-500 font-serif">We look forward to celebrating with you!</p>
+    </div>
+    
+    <!-- Decorative footer -->
+    <div class="h-8 bg-gray-800"></div>
+  </div>
+</body>
+</html> 

@@ -1,0 +1,41 @@
+<!-- Template 4: Modern Gradient - Bold design with gradient background and sans-serif font -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wedding Invitation - Modern Gradient</title>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-gray-100">
+  <div class="max-w-2xl w-full overflow-hidden rounded-xl shadow-xl">
+    <!-- Gradient background -->
+    <div class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-8 md:p-12 flex flex-col items-center text-center">
+      <h4 class="text-indigo-200 uppercase tracking-widest text-xs mb-10 font-bold">Save the Date</h4>
+      
+      <h1 class="text-4xl md:text-5xl font-sans font-extrabold text-white mb-8 leading-tight">
+        <span>{{brideName}}</span>
+        <span class="mx-2 text-pink-300">&</span>
+        <span>{{groomName}}</span>
+      </h1>
+      
+      <p class="text-indigo-100 mb-10 font-medium">are getting married</p>
+      
+      <div class="w-20 h-1 bg-white rounded-full my-8"></div>
+      
+      <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6 mb-10 w-full max-w-md">
+        <div class="font-sans text-xl text-white mb-4 font-bold">{{dateTime}}</div>
+        
+        <div class="font-sans text-xl text-white font-bold">{{venueName}}</div>
+        
+      </div>
+      
+      <!-- QR code placeholder with fancy design -->
+      <div class="p-3 bg-white rounded-xl shadow-lg mb-8">
+        <div id="qrcode" class="p-2 inline-block"></div>
+      </div>
+      
+      <p class="text-indigo-200 font-medium">We can't wait to celebrate with you!</p>
+    </div>
+  </div>
+</body>
+</html> 
