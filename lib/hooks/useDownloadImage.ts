@@ -9,7 +9,7 @@ import html2canvas from 'html2canvas-pro';
  * @returns Object containing download function and loading state
  */
 export function useDownloadImage(
-  elementRef: RefObject<HTMLDivElement>,
+  elementRef: RefObject<HTMLDivElement | null>,
   options?: {
     fileName?: string;
     scale?: number;

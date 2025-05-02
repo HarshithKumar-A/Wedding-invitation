@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { templates } from '@/lib/templates';
@@ -17,7 +17,8 @@ interface WeddingData {
   venueAddress: string;
 }
 
-export default function TemplateDetailsPage() {
+// Content component that uses useSearchParams
+function TemplateDetailsContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -109,61 +110,41 @@ export default function TemplateDetailsPage() {
     }
   }, [searchParams]);
   
-  // Load template data
+  // Fetch the template HTML
   useEffect(() => {
-    async function loadTemplate() {
-      try {
-        // Fetch template HTML file
-        const response = await fetch(`/templates/template${currentTemplateIndex + 1}.html`);
-        const html = await response.text();
-        setTemplateHtml(html);
-        
-        // Generate QR code for the venue address
-        if (formData && formData.venueAddress) {
-          try {
-            const qrCode = await QRCode.toDataURL(formData.venueAddress);
-            setQrCodeUrl(qrCode);
-            
-            // Add QR code to the template after it's loaded
-            setTimeout(() => {
-              const qrElement = document.getElementById('qrcode');
-              if (qrElement) {
-                if (template.id === 'dutch-save-the-date') {
-                  // Special handling for Dutch template
-                  qrElement.innerHTML = `<img src="${qrCode}" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain;">`;
-                } else {
-                  qrElement.innerHTML = `<img src="${qrCode}" alt="QR Code" style="width: 120px; height: 120px;">`;
-                }
-              }
-            }, 500);
-          } catch (error) {
-            console.error('Error generating QR code:', error);
-          }
+    setLoading(true);
+    fetch(`/templates/template${templateFileNumber}.html`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to load template: ${response.status}`);
         }
-      } catch (error) {
-        console.error('Error loading template:', error);
-        setError('Failed to load template. Please try again.');
-      } finally {
+        return response.text();
+      })
+      .then(html => {
+        setTemplateHtml(html);
+        setError(null);
+      })
+      .catch(err => {
+        console.error('Error loading template:', err);
+        setError(`Failed to load template: ${err.message}`);
+      })
+      .finally(() => {
         setLoading(false);
-      }
-    }
-    
-    if (formData) {
-      loadTemplate();
-    }
-  }, [formData, currentTemplateIndex, template.id, isDownloading]);
+      });
+  }, [templateFileNumber]);
   
-  // If no data is available or template is loading, show loading state
-  if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto p-6 text-center">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
-          <div className="h-64 bg-gray-200 rounded mb-4"></div>
-        </div>
-      </div>
-    );
-  }
+  // Generate QR code for venue address
+  useEffect(() => {
+    if (formData?.venueAddress) {
+      QRCode.toDataURL(formData.venueAddress)
+        .then(url => {
+          setQrCodeUrl(url);
+        })
+        .catch(err => {
+          console.error('Error generating QR code:', err);
+        });
+    }
+  }, [formData?.venueAddress]);
   
   // If no form data or template not found, show error
   if (!formData || !template) {
@@ -203,108 +184,178 @@ export default function TemplateDetailsPage() {
     .replace(/{{formattedDate}}/g, formatDutchDate(formData.weddingDateTime))
     .replace(/{{venueName}}/g, formData.venueName)
     .replace(/{{venueUrl}}/g, formData.venueAddress);
+    
+  // If still loading, show spinner
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-indigo-600">Template Preview</h1>
+          <Link 
+            href={`/preview?${searchParams.toString()}`}
+            className="text-indigo-600 hover:text-indigo-800 transition-colors"
+          >
+            ← Back to Templates
+          </Link>
+        </div>
+        
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+        </div>
+      </div>
+    );
+  }
+  
+  // If there was an error, show error message
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-indigo-600">Template Preview</h1>
+          <Link 
+            href={`/preview?${searchParams.toString()}`}
+            className="text-indigo-600 hover:text-indigo-800 transition-colors"
+          >
+            ← Back to Templates
+          </Link>
+        </div>
+        
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Template</h2>
+          <p className="text-red-700 mb-4">{error}</p>
+          <Link
+            href={`/preview?${searchParams.toString()}`}
+            className="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          >
+            Return to Templates
+          </Link>
+        </div>
+      </div>
+    );
+  }
   
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-2">
+    <div className="max-w-6xl mx-auto p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
         <h1 className="text-xl sm:text-3xl font-bold text-indigo-600">{template.name}</h1>
+        
+        <div className="flex gap-2">
+          <Button>
+            <Link href={`/preview?${searchParams.toString()}`}>
+              Back to Templates
+            </Link>
+          </Button>
+          
+          <button
+            onClick={() => downloadImage()}
+            disabled={isDownloading}
+            className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:bg-gray-400"
+          >
+            {isDownloading ? 'Downloading...' : 'Download Invitation'}
+          </button>
+        </div>
       </div>
+      
+      {/* Template description */}
+      <p className="text-gray-600 mb-8">{template.description}</p>
       
       {/* Template navigation */}
-      <div className="flex justify-between mb-6">
+      <div className="flex justify-between items-center mb-8">
         <button
-          onClick={() => navigateToTemplate(prevTemplateId || '')}
+          onClick={() => prevTemplateId && navigateToTemplate(prevTemplateId)}
           disabled={!prevTemplateId}
-          className={`flex items-center gap-2 px-4 py-2 ps-0 rounded text-xs sm:text-base w-1/4 ${
-            prevTemplateId 
-              ? 'text-gray-400 hover:bg-gray-100' 
-              : 'text-gray-700 cursor-not-allowed'
-          }`}
+          className="text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 transition-colors"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Previous
+          {prevTemplateId ? '← Previous Template' : ''}
         </button>
-        
-        <div className="text-center px-4 py-2 ">
-          <span className="text-sm text-gray-500 text-xs sm:text-base">
-            Template {currentTemplateIndex + 1} of {templates.length}
-          </span>
-        </div>
         
         <button
-          onClick={() => navigateToTemplate(nextTemplateId || '')}
+          onClick={() => nextTemplateId && navigateToTemplate(nextTemplateId)}
           disabled={!nextTemplateId}
-          className={`flex items-center gap-2 px-4 py-2 pe-0 rounded text-xs sm:text-base w-1/4 justify-end ${
-            nextTemplateId 
-              ? 'text-gray-400 hover:bg-gray-100' 
-              : 'text-gray-700 cursor-not-allowed'
-          }`}
+          className="text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 transition-colors"
         >
-          Next
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+          {nextTemplateId ? 'Next Template →' : ''}
         </button>
-      </div>
-      
-      {/* Template actions */}
-      <div className="rounded-lg mb-8 flex flex-wrap gap-4 justify-center sm:justify-end">
-        <button 
-          className={`${
-            isDownloading 
-              ? 'bg-gray-400 cursor-not-allowed' 
-              : 'bg-green-600 hover:bg-green-700'
-          } text-white font-medium py-2 px-4 rounded transition-colors inline-flex items-center`}
-          onClick={downloadImage}
-          disabled={isDownloading}
-        >
-          {isDownloading ? 'Generating...' : 'Download Image'}
-        </button>
-        <div className="flex gap-4">
-          <Button>
-            <Link 
-              href={`/preview?${searchParams.toString()}`}
-            >
-          Templates
-          </Link>
-          </Button>
-          <Button>
-          <Link 
-            href={`/form?${searchParams.toString()}`}
-          >
-            Edit 
-          </Link>
-        </Button>
-        </div>
       </div>
       
       {/* Template preview container */}
-      <div className="relative shadow-lg rounded-lg overflow-hidden mb-8 flex justify-center items-center">
-        {/* We use dangerouslySetInnerHTML only for the preview, as we're in control of the template HTML */}
+      <div className="flex justify-center">
         <div 
           ref={invitationRef}
-          className="overflow-auto max-h-[800px] border border-gray-200 rounded-lg"
-          dangerouslySetInnerHTML={{ __html: populatedHtml }}
-        />
-      </div>
-      
-      {/* Template info */}
-      <div className="rounded-lg">
-        <h2 className="text-xl font-semibold mb-4 text-indigo-600">About this template</h2>
-        <p className="text-gray-700 mb-4">{template.description}</p>
-        <p className="text-gray-500 text-sm">
-          This template preview shows how your invitation will look. The QR code links to your venue location.
-        </p>
-        <div className="mt-4 border-t border-gray-200 pt-4">
-          <h3 className="font-medium text-gray-700 mb-2">Download Instructions</h3>
-          <p className="text-gray-500 text-sm">
-            Click the "Download as Image" button to save your invitation as a PNG image. 
-            This process captures exactly what you see in the preview, including the QR code.
-          </p>
+          className="max-w-full border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+          style={{ width: '100%', maxWidth: '800px' }}
+        >
+          {/* An iframe to render the invitation HTML */}
+          <iframe
+            srcDoc={`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <script src="https://cdn.tailwindcss.com"></script>
+                <style>
+                  body { margin: 0; }
+                  ${template.customCss || ''}
+                </style>
+              </head>
+              <body>
+                ${populatedHtml}
+                ${qrCodeUrl ? `
+                <script>
+                  try {
+                    const qrCodeContainer = document.getElementById('qrcode');
+                    if (qrCodeContainer) {
+                      const img = document.createElement('img');
+                      img.src = "${qrCodeUrl}";
+                      img.alt = "Venue QR Code";
+                      img.style.width = "150px";
+                      img.style.height = "150px";
+                      qrCodeContainer.innerHTML = '';
+                      qrCodeContainer.appendChild(img);
+                    }
+                  } catch (e) {
+                    console.error('Error setting QR code:', e);
+                  }
+                </script>
+                ` : ''}
+              </body>
+              </html>
+            `}
+            className="w-full border-0"
+            style={{ height: '600px' }}
+            title="Wedding Invitation Preview"
+            sandbox="allow-scripts"
+          />
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading fallback component
+function TemplateDetailsLoading() {
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-8">
+        <div className="h-10 w-48 bg-gray-200 rounded animate-pulse"></div>
+        <div className="h-10 w-36 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+      
+      <div className="h-4 w-3/4 bg-gray-200 rounded mb-8 animate-pulse"></div>
+      
+      <div className="flex justify-center">
+        <div className="h-96 w-full max-w-2xl bg-gray-200 rounded animate-pulse"></div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function TemplateDetailsPage() {
+  return (
+    <Suspense fallback={<TemplateDetailsLoading />}>
+      <TemplateDetailsContent />
+    </Suspense>
   );
 } 

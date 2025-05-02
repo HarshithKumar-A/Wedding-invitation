@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { templates, Template } from '@/lib/templates';
@@ -15,7 +15,8 @@ interface WeddingData {
   venueAddress: string;
 }
 
-export default function PreviewPage() {
+// Content component that uses useSearchParams
+function PreviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -215,5 +216,31 @@ export default function PreviewPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+// Loading fallback component
+function PreviewLoading() {
+  return (
+    <div className="p-6">
+      <h1 className="text-xl sm:text-3xl font-bold text-indigo-600 mb-8">Loading Templates...</h1>
+      <div className="animate-pulse space-y-6">
+        <div className="h-48 bg-gray-200 rounded mb-4"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function PreviewPage() {
+  return (
+    <Suspense fallback={<PreviewLoading />}>
+      <PreviewContent />
+    </Suspense>
   );
 } 

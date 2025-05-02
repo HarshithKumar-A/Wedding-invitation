@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function FormPage() {
+// Form component that uses useSearchParams
+function FormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -216,5 +217,30 @@ export default function FormPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+// Loading fallback component
+function FormLoading() {
+  return (
+    <div className="w-full max-w-3xl mx-auto p-6">
+      <h1 className="text-xl sm:text-3xl font-bold text-indigo-600 mb-8">Loading Form...</h1>
+      <div className="animate-pulse space-y-6">
+        <div className="h-10 bg-gray-200 rounded"></div>
+        <div className="h-10 bg-gray-200 rounded"></div>
+        <div className="h-10 bg-gray-200 rounded"></div>
+        <div className="h-10 bg-gray-200 rounded"></div>
+        <div className="h-10 bg-gray-200 rounded"></div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function FormPage() {
+  return (
+    <Suspense fallback={<FormLoading />}>
+      <FormContent />
+    </Suspense>
   );
 } 

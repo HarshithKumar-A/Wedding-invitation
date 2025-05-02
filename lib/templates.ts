@@ -6,6 +6,7 @@ export interface Template {
   thumbnailSrc: string;
   primaryColor: string;
   secondaryColor: string;
+  customCss?: string; // Optional custom CSS for the template
 }
 
 // Export an array of wedding invitation templates
