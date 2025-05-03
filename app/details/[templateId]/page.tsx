@@ -29,6 +29,10 @@ function TemplateDetailsContent() {
   const [loading, setLoading] = useState(true);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState<string>('');
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [qrCodeType, setQrCodeType] = useState<'venue' | 'invitation'>('venue');
   
   // Create a ref to the invitation container for image download
   const invitationRef = useRef<HTMLDivElement>(null);
@@ -133,10 +137,48 @@ function TemplateDetailsContent() {
       });
   }, [templateFileNumber]);
   
-  // Generate QR code for venue address
+  // Create shareable link
   useEffect(() => {
-    if (formData?.venueAddress) {
-      QRCode.toDataURL(formData.venueAddress)
+    if (formData && templateId) {
+      try {
+        // Create the data object to be encoded
+        const shareData = {
+          brideName: formData.brideName,
+          groomName: formData.groomName,
+          dateTime: formData.weddingDateTime,
+          venueName: formData.venueName,
+          venueUrl: formData.venueAddress,
+          templateId: templateId,
+          qrCodeType: qrCodeType  // Include QR code type preference
+        };
+        
+        // Convert to JSON and encode as base64
+        const jsonString = JSON.stringify(shareData);
+        const base64Data = btoa(jsonString);
+        
+        // Create the full URL with encoded data
+        const encodedData = encodeURIComponent(base64Data);
+        const baseUrl = window.location.origin;
+        const fullShareUrl = `${baseUrl}/invite?data=${encodedData}`;
+        
+        setShareUrl(fullShareUrl);
+      } catch (error) {
+        console.error('Error creating share link:', error);
+      }
+    }
+  }, [formData, templateId, qrCodeType]);
+  
+  // Generate QR code based on selected type
+  useEffect(() => {
+    if (!formData) return;
+
+    // Determine which URL to use for the QR code
+    const qrCodeContent = qrCodeType === 'venue' 
+      ? formData.venueAddress  // Use venue address/Google Maps link
+      : shareUrl;              // Use invitation link
+
+    if (qrCodeContent) {
+      QRCode.toDataURL(qrCodeContent)
         .then(url => {
           setQrCodeUrl(url);
         })
@@ -144,7 +186,71 @@ function TemplateDetailsContent() {
           console.error('Error generating QR code:', err);
         });
     }
-  }, [formData?.venueAddress]);
+  }, [formData?.venueAddress, shareUrl, qrCodeType]);
+  
+  // Toggle QR code type
+  const toggleQrCodeType = () => {
+    setQrCodeType(prevType => prevType === 'venue' ? 'invitation' : 'venue');
+  };
+  
+  // Handle copy to clipboard
+  const handleCopyToClipboard = () => {
+    try {
+      // Check if the Clipboard API is available
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl)
+          .then(() => {
+            setCopySuccess(true);
+            setTimeout(() => setCopySuccess(false), 3000);
+          })
+          .catch(err => {
+            console.error('Error copying to clipboard with Clipboard API:', err);
+            // Fall back to execCommand method
+            fallbackCopyToClipboard();
+          });
+      } else {
+        // Clipboard API not available, use fallback
+        fallbackCopyToClipboard();
+      }
+    } catch (err) {
+      console.error('Error in clipboard handling:', err);
+      // Try fallback method as last resort
+      fallbackCopyToClipboard();
+    }
+  };
+  
+  // Fallback method using document.execCommand
+  const fallbackCopyToClipboard = () => {
+    try {
+      // Create a temporary input element
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      
+      // Make the textarea out of viewport
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      // Execute copy command
+      const successful = document.execCommand('copy');
+      
+      // Clean up
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 3000);
+      } else {
+        console.error('Fallback clipboard copy failed');
+      }
+    } catch (err) {
+      console.error('Fallback clipboard method failed:', err);
+    }
+  };
   
   // If no form data or template not found, show error
   if (!formData || !template) {
@@ -253,11 +359,48 @@ function TemplateDetailsContent() {
           >
             {isDownloading ? 'Downloading...' : 'Download Invitation'}
           </button>
+          
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          >
+            Share Link
+          </button>
         </div>
       </div>
       
       {/* Template description */}
       <p className="text-gray-600 mb-8">{template.description}</p>
+      
+      {/* QR Code Toggle */}
+      <div className="bg-gray-100 p-4 rounded-lg mb-8">
+        <h3 className="font-medium text-gray-700 mb-2">QR Code Settings</h3>
+        <div className="flex items-center">
+          <span className="text-sm text-gray-600 mr-2">QR Code Content:</span>
+          <div className="relative inline-block w-10 mr-2 align-middle select-none">
+            <input 
+              type="checkbox" 
+              id="qrToggle" 
+              name="qrToggle" 
+              className="sr-only peer"
+              checked={qrCodeType === 'invitation'}
+              onChange={toggleQrCodeType} 
+            />
+            <label 
+              htmlFor="qrToggle" 
+              className="block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer peer-checked:bg-indigo-500 after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-4"
+            ></label>
+          </div>
+          <span className="text-sm font-medium">
+            {qrCodeType === 'venue' ? 'Google Maps Location' : 'Invitation Link'}
+          </span>
+          <div className="ml-4 text-xs text-gray-500">
+            {qrCodeType === 'venue' 
+              ? 'QR code will open Google Maps when scanned' 
+              : 'QR code will open the digital invitation when scanned'}
+          </div>
+        </div>
+      </div>
       
       {/* Template navigation */}
       <div className="flex justify-between items-center mb-8">
@@ -329,6 +472,73 @@ function TemplateDetailsContent() {
           />
         </div>
       </div>
+      
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-white/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-black rounded-lg p-6 max-w-lg w-full">
+            <h2 className="text-xl font-bold mb-4">Share Invitation Link</h2>
+            <p className="text-gray-600 mb-4">
+              Anyone with this link can view the invitation directly:
+            </p>
+            
+            <div className="flex items-center mb-2">
+              <input
+                type="text"
+                value={shareUrl}
+                readOnly
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+                className="flex-1 p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                onClick={handleCopyToClipboard}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-r-lg transition-colors"
+              >
+                {copySuccess ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            
+            {copySuccess && (
+              <p className="text-green-600 text-sm mb-4">
+                ✓ Link copied to clipboard successfully!
+              </p>
+            )}
+            
+            <div className="text-xs text-gray-500 mt-1 mb-4">
+              If the copy button doesn't work, click the link above to select it, then copy manually.
+            </div>
+            
+            <h3 className="font-medium text-sm mt-4 mb-2 text-gray-700">Share options:</h3>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <a 
+                href={`mailto:?subject=Wedding Invitation&body=You're invited! View our wedding invitation here: ${encodeURIComponent(shareUrl)}`}
+                className="inline-flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-800 py-1 px-3 rounded text-sm"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span>Email</span>
+              </a>
+              <a 
+                href={`https://wa.me/?text=${encodeURIComponent(`You're invited! View our wedding invitation here: ${shareUrl}`)}`}
+                className="inline-flex items-center gap-1 bg-green-100 hover:bg-green-200 text-green-800 py-1 px-3 rounded text-sm"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span>WhatsApp</span>
+              </a>
+            </div>
+            
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
