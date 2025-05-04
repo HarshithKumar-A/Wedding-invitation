@@ -1,6 +1,16 @@
-import Link from "next/link";
+'use client';
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 export default function Header() {
+  const pathname = usePathname();
+
+  const isInvitePage = pathname.startsWith("/invite");
+
+  if (isInvitePage) {
+    return null;
+  }
+
   return (
     <header className="w-full border-b border-gray-100">
       <nav className="px-6 py-4 flex items-center justify-between">

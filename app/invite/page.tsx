@@ -165,11 +165,7 @@ function InviteContent() {
     const qrCodeType = invitationData.qrCodeType || 'venue';
     const qrContentUrl = qrCodeType === 'venue' ? invitationData.venueUrl : shareUrl;
     
-    let qrCodeReplacement: string;
-    
-    if (qrCodeType === 'venue') {
-      // If venue selected, use Google Maps button
-      qrCodeReplacement = `
+    let qrCodeReplacement = `
         <div id="qrcode" class="border border-gray-200 p-4 inline-block mb-6 text-center">
           <div class="mb-2 text-gray-600 text-sm">Venue Location</div>
           <a href="${invitationData.venueUrl}" 
@@ -185,19 +181,6 @@ function InviteContent() {
           <div class="mt-2 text-gray-600 text-xs">Click to get directions</div>
         </div>
       `;
-    } else {
-      // If invitation selected, we'll render an actual QR code
-      // We'll inject a placeholder and fill it via script
-      qrCodeReplacement = `
-        <div id="qrcode" class="border border-gray-200 p-4 inline-block mb-6 text-center">
-          <div class="mb-2 text-gray-600 text-sm">Scan to View Digital Invitation</div>
-          <div id="qr-code-container" class="flex justify-center items-center h-36 w-36 mx-auto bg-gray-100">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
-          </div>
-          <div class="mt-2 text-gray-600 text-xs">Share with friends & family</div>
-        </div>
-      `;
-    }
     
     // Replace the QR code div with our replacement
     populatedHtml = populatedHtml.replace(qrCodeDivRegex, qrCodeReplacement);
